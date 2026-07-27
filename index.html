@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻雀の勉強部屋 | 一打一打、卓の上で</title>
+<meta name="robots" content="noai, noimageai">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Noto+Serif+JP:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red: #7a1f2b;
+    --red-deep: #3d0f16;
+    --red-bright: #a5293a;
+    --ivory: #f1e9d8;
+    --ivory-shadow: #d8c9a8;
+    --ink: #211913;
+    --gold: #b8925a;
+    --gold-soft: #d9bd8c;
+    --bamboo: #3f5d45;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    font-family:'Noto Serif JP', serif;
+    color: var(--ivory);
+    background:
+      repeating-linear-gradient(135deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 26px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.08) 0 2px, transparent 2px 26px),
+      radial-gradient(ellipse at 50% -10%, var(--red-bright) 0%, var(--red) 45%, var(--red-deep) 100%);
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+    overflow-x:hidden;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  .wrap{ max-width: 1080px; margin:0 auto; padding: 0 24px; }
+
+  /* ---------- 装飾: 卓の縁 ---------- */
+  .table-frame{
+    position: fixed;
+    inset: 10px;
+    border: 2px solid rgba(184,146,90,0.35);
+    border-radius: 18px;
+    pointer-events:none;
+    z-index: 5;
+  }
+  @media (max-width: 640px){ .table-frame{ display:none; } }
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    position: relative;
+    min-height: 92vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 80px 24px 60px;
+  }
+
+  .hero-eyebrow{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.45em;
+    color: var(--gold-soft);
+    margin-bottom: 34px;
+    opacity: 0.9;
+  }
+
+  /* 中の牌 */
+  .chun-tile{
+    width: 156px;
+    height: 208px;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    border-radius: 14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:
+      0 2px 0 rgba(255,255,255,0.5) inset,
+      0 -10px 0 -2px var(--bamboo) inset,
+      0 22px 40px rgba(0,0,0,0.45),
+      0 4px 0 rgba(0,0,0,0.2);
+    position: relative;
+    opacity: 0;
+    transform: translateY(46px) rotate(-2deg);
+    animation: draw-tile 0.9s cubic-bezier(.2,.8,.2,1) 0.15s forwards;
+  }
+  .chun-tile::before{
+    content:"";
+    position:absolute;
+    inset: 10px;
+    border: 1px solid rgba(33,25,19,0.12);
+    border-radius: 8px;
+  }
+  .chun-tile span{
+    font-family:'Shippori Mincho', serif;
+    font-weight: 800;
+    font-size: 6.4rem;
+    color: var(--red);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+    transform: translateY(-6px);
+  }
+
+  @keyframes draw-tile{
+    to{ opacity:1; transform: translateY(0) rotate(-2deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .chun-tile{ animation: none; opacity:1; transform: translateY(0) rotate(-2deg); }
+  }
+
+  .hero h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight: 800;
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    margin-top: 40px;
+    letter-spacing: 0.06em;
+    color: var(--ivory);
+  }
+
+  .hero .sub{
+    margin-top: 18px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.12em;
+    color: var(--gold-soft);
+  }
+
+  .hero .lede{
+    margin-top: 30px;
+    max-width: 560px;
+    font-size: 0.98rem;
+    color: rgba(241,233,216,0.85);
+  }
+
+  .scroll-cue{
+    position:absolute;
+    bottom: 36px;
+    left:50%;
+    transform: translateX(-50%);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.3em;
+    color: rgba(241,233,216,0.55);
+  }
+
+  /* ---------- 牌のラック(ナビ) ---------- */
+  nav.rack{
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(180deg, rgba(61,15,22,0.96), rgba(61,15,22,0.85));
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(184,146,90,0.3);
+  }
+  .rack-inner{
+    max-width: 1080px;
+    margin: 0 auto;
+    display:flex;
+    gap: 14px;
+    padding: 14px 24px;
+    justify-content:center;
+    flex-wrap: wrap;
+  }
+  .tile-link{
+    position:relative;
+    width: 72px;
+    height: 96px;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    border-radius: 8px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 8px 14px rgba(0,0,0,0.35);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .tile-link:hover, .tile-link:focus-visible{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 16px 22px rgba(0,0,0,0.45);
+    outline: none;
+  }
+  .tile-link:focus-visible{ outline: 2px solid var(--gold); outline-offset: 3px; }
+  .tile-link.current{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--red) inset,
+      0 12px 18px rgba(0,0,0,0.4);
+  }
+  .tile-link .kanji{
+    font-family:'Shippori Mincho', serif;
+    font-weight: 700;
+    font-size: 1.55rem;
+    color: var(--red);
+  }
+  .tile-link .roman{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  /* ---------- セクション共通 ---------- */
+  section{ padding: 100px 24px; }
+  .section-inner{ max-width: 900px; margin:0 auto; }
+
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    gap: 18px;
+    margin-bottom: 42px;
+  }
+  .section-head .mark{
+    font-family:'Shippori Mincho', serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--gold-soft);
+  }
+  .section-head h2{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .section-head .en{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.28em;
+    color: rgba(241,233,216,0.5);
+    margin-left: auto;
+  }
+
+  /* ---------- このサイトについて ---------- */
+  .about-grid{
+    display:grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 50px;
+    align-items:start;
+  }
+  .about-grid p{ color: rgba(241,233,216,0.88); font-size: 0.98rem; }
+  .about-grid p + p{ margin-top: 1.3em; }
+
+  .wall-list{
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+  }
+  .wall-list li{
+    list-style:none;
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: rgba(0,0,0,0.18);
+    border-left: 3px solid var(--gold);
+    border-radius: 4px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.88rem;
+    color: rgba(241,233,216,0.9);
+  }
+  .wall-list .num{
+    font-family:'Shippori Mincho', serif;
+    color: var(--gold-soft);
+    font-size: 1.1rem;
+    min-width: 1.4em;
+  }
+
+  @media (max-width: 760px){
+    .about-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- 学習メモ ピックアップ (牌カード) ---------- */
+  .study-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .study-card{
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 30px 22px 26px;
+    text-align:center;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -7px 0 -2px var(--bamboo) inset,
+      0 14px 26px rgba(0,0,0,0.35);
+    transition: transform 0.25s ease;
+  }
+  .study-card:hover{ transform: translateY(-6px); }
+  .study-card .glyph{
+    font-family:'Shippori Mincho', serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--red);
+    display:block;
+  }
+  .study-card h3{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.9rem;
+    margin-top: 14px;
+    letter-spacing: 0.05em;
+  }
+  .study-card p{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.76rem;
+    color: rgba(33,25,19,0.65);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 760px){
+    .study-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- 起家からひとこと (簡易 引用) ---------- */
+  .quote-strip{
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 60px 24px;
+    text-align:center;
+    border-top: 1px solid rgba(184,146,90,0.3);
+    border-bottom: 1px solid rgba(184,146,90,0.3);
+  }
+  .quote-strip p{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.15rem;
+    line-height: 2;
+    color: var(--ivory);
+  }
+  .quote-strip span{
+    display:block;
+    margin-top: 18px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--gold-soft);
+  }
+
+  /* ---------- フッター ---------- */
+  footer{
+    padding: 70px 24px 50px;
+    text-align:center;
+    background: rgba(0,0,0,0.22);
+  }
+  footer .site-name{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.1rem;
+    color: var(--gold-soft);
+  }
+  footer .links{
+    margin-top: 18px;
+    display:flex;
+    gap: 22px;
+    justify-content:center;
+    flex-wrap:wrap;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.82rem;
+  }
+  footer .links a{
+    color: rgba(241,233,216,0.8);
+    border-bottom: 1px solid rgba(241,233,216,0.25);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  footer .links a:hover{ color: var(--gold-soft); border-color: var(--gold-soft); }
+
+  footer .notice{
+    margin-top: 34px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.68rem;
+    line-height: 1.9;
+    color: rgba(241,233,216,0.42);
+    max-width: 520px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="table-frame" aria-hidden="true"></div>
+
+<header class="hero">
+  <p class="hero-eyebrow">MAHJONG STUDY ROOM</p>
+  <div class="chun-tile"><span>中</span></div>
+  <h1>麻雀の勉強部屋</h1>
+  <p class="sub">一打一打、卓の上で考える</p>
+  <p class="lede">
+    役、点数計算、何切る、押し引き――独学で積み上げてきたことを、
+    自分の言葉でここに記録していく場所です。
+  </p>
+  <p class="scroll-cue">S C R O L L</p>
+</header>
+
+<nav class="rack" aria-label="サイト内ナビゲーション">
+  <div class="rack-inner">
+    <a class="tile-link current" href="index.html" aria-current="page">
+      <span class="kanji">卓</span><span class="roman">TOP</span>
+    </a>
+    <a class="tile-link" href="blog.html">
+      <span class="kanji">日記</span><span class="roman">BLOG</span>
+    </a>
+    <a class="tile-link" href="gallery.html">
+      <span class="kanji">牌譜</span><span class="roman">GALLERY</span>
+    </a>
+    <a class="tile-link" href="about.html">
+      <span class="kanji">紹介</span><span class="roman">ABOUT</span>
+    </a>
+  </div>
+</nav>
+
+<section id="about">
+  <div class="section-inner">
+    <div class="section-head">
+      <span class="mark">卓</span>
+      <h2>このサイトについて</h2>
+      <span class="en">ABOUT THIS ROOM</span>
+    </div>
+    <div class="about-grid">
+      <div>
+        <p>
+          麻雀を打ちながら、その都度わからなかったこと、間違えた判断、
+          あとで見返したい牌姿をここに書き留めています。
+          上手い人の解説を鵜呑みにするのではなく、
+          自分の卓での経験と照らし合わせながら、少しずつ理解を積み上げていくのが目的です。
+        </p>
+        <p>
+          最初から体系立った教科書を目指しているわけではありません。
+          むしろ日々の対局で引っかかった一打を、そのつど拾い上げていく――
+          そんな雑然とした記録の積み重ねが、いつか自分なりの打ち筋になればと思っています。
+        </p>
+      </div>
+      <ul class="wall-list">
+        <li><span class="num">一</span>何切るの振り返り</li>
+        <li><span class="num">二</span>点数計算の練習</li>
+        <li><span class="num">三</span>役と場況の整理</li>
+        <li><span class="num">四</span>押し引きの判断ログ</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="pickup">
+  <div class="section-inner">
+    <div class="section-head">
+      <span class="mark">学</span>
+      <h2>学習メモ ピックアップ</h2>
+      <span class="en">STUDY TOPICS</span>
+    </div>
+    <div class="study-grid">
+      <div class="study-card">
+        <span class="glyph">役</span>
+        <h3>役を覚える</h3>
+        <p>基本役から複合役まで、成立条件と符・翻を自分の言葉で整理する。</p>
+      </div>
+      <div class="study-card">
+        <span class="glyph">点</span>
+        <h3>点数計算</h3>
+        <p>符計算のつまずきやすいポイントと、早見表に頼らない計算練習。</p>
+      </div>
+      <div class="study-card">
+        <span class="glyph">切</span>
+        <h3>何切る</h3>
+        <p>実戦で迷った手牌を切り出し、あとから正着と照らし合わせる。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="quote-strip">
+  <p>勝ちを急がず、まず一打の意味を説明できるようになること。</p>
+  <span>― この部屋を作った理由</span>
+</div>
+
+<footer>
+  <p class="site-name">麻雀の勉強部屋</p>
+  <div class="links">
+    <a href="https://azaleacreativeroom888.github.io/">Azalea Creative Room</a>
+    <a href="https://azaleacreativeroom888.github.io/links.html">Links</a>
+    <a href="blog.html">日記</a>
+    <a href="gallery.html">牌譜</a>
+    <a href="about.html">紹介</a>
+  </div>
+  <p class="notice">
+    本サイトに掲載する文章・画像等のコンテンツは、生成AIの学習データとしての使用を固く禁じます。<br>
+    No AI training on any text or image content on this site.
+  </p>
+</footer>
+
+</body>
+</html>
