@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>牌譜 | 麻雀の勉強部屋</title>
+<meta name="robots" content="noai, noimageai">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Noto+Serif+JP:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red: #7a1f2b;
+    --red-deep: #3d0f16;
+    --red-bright: #a5293a;
+    --ivory: #f1e9d8;
+    --ivory-shadow: #d8c9a8;
+    --ink: #211913;
+    --gold: #b8925a;
+    --gold-soft: #d9bd8c;
+    --bamboo: #3f5d45;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    font-family:'Noto Serif JP', serif;
+    color: var(--ivory);
+    background:
+      repeating-linear-gradient(135deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 26px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.08) 0 2px, transparent 2px 26px),
+      radial-gradient(ellipse at 50% -10%, var(--red-bright) 0%, var(--red) 45%, var(--red-deep) 100%);
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  .table-frame{
+    position: fixed;
+    inset: 10px;
+    border: 2px solid rgba(184,146,90,0.35);
+    border-radius: 18px;
+    pointer-events:none;
+    z-index: 5;
+  }
+  @media (max-width: 640px){ .table-frame{ display:none; } }
+
+  /* ---------- 牌のラック(ナビ) ---------- */
+  nav.rack{
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(180deg, rgba(61,15,22,0.96), rgba(61,15,22,0.85));
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(184,146,90,0.3);
+  }
+  .rack-inner{
+    max-width: 1080px;
+    margin: 0 auto;
+    display:flex;
+    gap: 14px;
+    padding: 14px 24px;
+    justify-content:center;
+    flex-wrap: wrap;
+  }
+  .tile-link{
+    position:relative;
+    width: 72px;
+    height: 96px;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    border-radius: 8px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 8px 14px rgba(0,0,0,0.35);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .tile-link:hover, .tile-link:focus-visible{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 16px 22px rgba(0,0,0,0.45);
+    outline: none;
+  }
+  .tile-link:focus-visible{ outline: 2px solid var(--gold); outline-offset: 3px; }
+  .tile-link.current{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--red) inset,
+      0 12px 18px rgba(0,0,0,0.4);
+  }
+  .tile-link .kanji{
+    font-family:'Shippori Mincho', serif;
+    font-weight: 700;
+    font-size: 1.55rem;
+    color: var(--red);
+  }
+  .tile-link .roman{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  /* ---------- ページ見出し ---------- */
+  .page-head{
+    text-align:center;
+    padding: 70px 24px 20px;
+  }
+  .page-head .mark{
+    font-family:'Shippori Mincho', serif;
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: var(--gold-soft);
+    display:block;
+  }
+  .page-head h1{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin-top: 10px;
+    letter-spacing: 0.06em;
+  }
+  .page-head p{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    color: rgba(241,233,216,0.55);
+    margin-top: 12px;
+  }
+
+  /* ---------- フィルタタブ ---------- */
+  .filter-row{
+    display:flex;
+    gap: 10px;
+    justify-content:center;
+    flex-wrap:wrap;
+    padding: 30px 24px 10px;
+  }
+  .filter-btn{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    color: rgba(241,233,216,0.65);
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(184,146,90,0.3);
+    border-radius: 999px;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .filter-btn:hover{ color: var(--gold-soft); border-color: var(--gold-soft); }
+  .filter-btn.active{
+    background: var(--gold-soft);
+    color: var(--red-deep);
+    border-color: var(--gold-soft);
+    font-weight: 700;
+  }
+
+  /* ---------- ギャラリーグリッド ---------- */
+  main{
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 30px 24px 120px;
+  }
+
+  .gallery-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+
+  .gallery-card{
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    border-radius: 12px;
+    overflow:hidden;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -7px 0 -2px var(--bamboo) inset,
+      0 14px 26px rgba(0,0,0,0.35);
+    transition: transform 0.25s ease;
+    cursor:pointer;
+  }
+  .gallery-card:hover{ transform: translateY(-6px); }
+
+  .gallery-thumb{
+    aspect-ratio: 4 / 3;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    color: rgba(33,25,19,0.28);
+    font-family:'Shippori Mincho', serif;
+    font-size: 3rem;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(33,25,19,0.1);
+  }
+  /* プレースホルダー用の背景バリエーション(実際は<img>に差し替え) */
+  .gallery-thumb.bg-a{ background: repeating-linear-gradient(45deg, rgba(122,31,43,0.08) 0 8px, rgba(122,31,43,0.02) 8px 16px); }
+  .gallery-thumb.bg-b{ background: repeating-linear-gradient(-45deg, rgba(63,93,69,0.10) 0 8px, rgba(63,93,69,0.02) 8px 16px); }
+  .gallery-thumb.bg-c{ background: repeating-linear-gradient(90deg, rgba(184,146,90,0.10) 0 8px, rgba(184,146,90,0.02) 8px 16px); }
+
+  .gallery-caption{
+    padding: 16px 18px 18px;
+  }
+  .gallery-caption .tag{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .gallery-caption h3{
+    font-family:'Shippori Mincho', serif;
+    font-size: 0.98rem;
+    color: var(--ink);
+    margin-top: 6px;
+  }
+  .gallery-caption p{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.72rem;
+    color: rgba(33,25,19,0.6);
+    margin-top: 6px;
+  }
+
+  .empty-note{
+    text-align:center;
+    margin-top: 20px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.78rem;
+    color: rgba(241,233,216,0.45);
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 860px){
+    .gallery-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px){
+    .gallery-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- フッター ---------- */
+  footer{
+    padding: 70px 24px 50px;
+    text-align:center;
+    background: rgba(0,0,0,0.22);
+  }
+  footer .site-name{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.1rem;
+    color: var(--gold-soft);
+  }
+  footer .links{
+    margin-top: 18px;
+    display:flex;
+    gap: 22px;
+    justify-content:center;
+    flex-wrap:wrap;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.82rem;
+  }
+  footer .links a{
+    color: rgba(241,233,216,0.8);
+    border-bottom: 1px solid rgba(241,233,216,0.25);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  footer .links a:hover{ color: var(--gold-soft); border-color: var(--gold-soft); }
+
+  footer .notice{
+    margin-top: 34px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.68rem;
+    line-height: 1.9;
+    color: rgba(241,233,216,0.42);
+    max-width: 520px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="table-frame" aria-hidden="true"></div>
+
+<nav class="rack" aria-label="サイト内ナビゲーション">
+  <div class="rack-inner">
+    <a class="tile-link" href="index.html">
+      <span class="kanji">卓</span><span class="roman">TOP</span>
+    </a>
+    <a class="tile-link" href="blog.html">
+      <span class="kanji">日記</span><span class="roman">BLOG</span>
+    </a>
+    <a class="tile-link current" href="gallery.html" aria-current="page">
+      <span class="kanji">牌譜</span><span class="roman">GALLERY</span>
+    </a>
+    <a class="tile-link" href="about.html">
+      <span class="kanji">紹介</span><span class="roman">ABOUT</span>
+    </a>
+  </div>
+</nav>
+
+<header class="page-head">
+  <span class="mark">牌譜</span>
+  <h1>牌譜ギャラリー</h1>
+  <p>SCORE SHEETS &amp; HAND RECORDS</p>
+</header>
+
+<div class="filter-row" role="tablist" aria-label="ギャラリーの絞り込み">
+  <button class="filter-btn active" data-filter="all">すべて</button>
+  <button class="filter-btn" data-filter="kirikata">何切る</button>
+  <button class="filter-btn" data-filter="tenbo">点数計算</button>
+  <button class="filter-btn" data-filter="yaku">役の整理</button>
+</div>
+
+<main>
+  <div class="gallery-grid">
+
+    <!-- 各カードの .gallery-thumb 内に <img src="..." alt="..."> を差し込めば画像表示に切り替わります -->
+
+    <div class="gallery-card" data-cat="kirikata">
+      <div class="gallery-thumb bg-a">牌</div>
+      <div class="gallery-caption">
+        <span class="tag">何切る</span>
+        <h3>一向聴での打牌選択</h3>
+        <p>2026.07.21の対局より</p>
+      </div>
+    </div>
+
+    <div class="gallery-card" data-cat="tenbo">
+      <div class="gallery-thumb bg-b">点</div>
+      <div class="gallery-caption">
+        <span class="tag">点数計算</span>
+        <h3>符計算の書き取りメモ</h3>
+        <p>切り上げ忘れの反省つき</p>
+      </div>
+    </div>
+
+    <div class="gallery-card" data-cat="yaku">
+      <div class="gallery-thumb bg-c">役</div>
+      <div class="gallery-caption">
+        <span class="tag">役の整理</span>
+        <h3>複合役の早見メモ</h3>
+        <p>自作の一覧表</p>
+      </div>
+    </div>
+
+    <div class="gallery-card" data-cat="kirikata">
+      <div class="gallery-thumb bg-b">聴</div>
+      <div class="gallery-caption">
+        <span class="tag">何切る</span>
+        <h3>両面変化の比較</h3>
+        <p>形の違いを書き出したもの</p>
+      </div>
+    </div>
+
+    <div class="gallery-card" data-cat="yaku">
+      <div class="gallery-thumb bg-a">場</div>
+      <div class="gallery-caption">
+        <span class="tag">役の整理</span>
+        <h3>場況別の判断ログ</h3>
+        <p>親番・オーラス想定</p>
+      </div>
+    </div>
+
+    <div class="gallery-card" data-cat="tenbo">
+      <div class="gallery-thumb bg-c">符</div>
+      <div class="gallery-caption">
+        <span class="tag">点数計算</span>
+        <h3>翻数と符のクロス表</h3>
+        <p>手書きの練習用表</p>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="empty-note">画像は準備中。少しずつ差し替えていきます。</p>
+</main>
+
+<footer>
+  <p class="site-name">麻雀の勉強部屋</p>
+  <div class="links">
+    <a href="https://azaleacreativeroom888.github.io/">Azalea Creative Room</a>
+    <a href="https://azaleacreativeroom888.github.io/links.html">Links</a>
+    <a href="index.html">卓</a>
+    <a href="blog.html">日記</a>
+    <a href="about.html">紹介</a>
+  </div>
+  <p class="notice">
+    本サイトに掲載する文章・画像等のコンテンツは、生成AIの学習データとしての使用を固く禁じます。<br>
+    No AI training on any text or image content on this site.
+  </p>
+</footer>
+
+<script>
+  // フィルタタブの切り替え(カテゴリでカードを絞り込み)
+  const buttons = document.querySelectorAll('.filter-btn');
+  const cards = document.querySelectorAll('.gallery-card');
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+
+      cards.forEach(card => {
+        if(filter === 'all' || card.dataset.cat === filter){
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
