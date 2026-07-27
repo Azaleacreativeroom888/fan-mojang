@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日記 | 麻雀の勉強部屋</title>
+<meta name="robots" content="noai, noimageai">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Noto+Serif+JP:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red: #7a1f2b;
+    --red-deep: #3d0f16;
+    --red-bright: #a5293a;
+    --ivory: #f1e9d8;
+    --ivory-shadow: #d8c9a8;
+    --ink: #211913;
+    --gold: #b8925a;
+    --gold-soft: #d9bd8c;
+    --bamboo: #3f5d45;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    font-family:'Noto Serif JP', serif;
+    color: var(--ivory);
+    background:
+      repeating-linear-gradient(135deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 26px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.08) 0 2px, transparent 2px 26px),
+      radial-gradient(ellipse at 50% -10%, var(--red-bright) 0%, var(--red) 45%, var(--red-deep) 100%);
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+
+  .table-frame{
+    position: fixed;
+    inset: 10px;
+    border: 2px solid rgba(184,146,90,0.35);
+    border-radius: 18px;
+    pointer-events:none;
+    z-index: 5;
+  }
+  @media (max-width: 640px){ .table-frame{ display:none; } }
+
+  /* ---------- 牌のラック(ナビ) ---------- */
+  nav.rack{
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(180deg, rgba(61,15,22,0.96), rgba(61,15,22,0.85));
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(184,146,90,0.3);
+  }
+  .rack-inner{
+    max-width: 1080px;
+    margin: 0 auto;
+    display:flex;
+    gap: 14px;
+    padding: 14px 24px;
+    justify-content:center;
+    flex-wrap: wrap;
+  }
+  .tile-link{
+    position:relative;
+    width: 72px;
+    height: 96px;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    border-radius: 8px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 8px 14px rgba(0,0,0,0.35);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .tile-link:hover, .tile-link:focus-visible{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 16px 22px rgba(0,0,0,0.45);
+    outline: none;
+  }
+  .tile-link:focus-visible{ outline: 2px solid var(--gold); outline-offset: 3px; }
+  .tile-link.current{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--red) inset,
+      0 12px 18px rgba(0,0,0,0.4);
+  }
+  .tile-link .kanji{
+    font-family:'Shippori Mincho', serif;
+    font-weight: 700;
+    font-size: 1.55rem;
+    color: var(--red);
+  }
+  .tile-link .roman{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  /* ---------- ページ見出し ---------- */
+  .page-head{
+    text-align:center;
+    padding: 70px 24px 40px;
+  }
+  .page-head .mark{
+    font-family:'Shippori Mincho', serif;
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: var(--gold-soft);
+    display:block;
+  }
+  .page-head h1{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin-top: 10px;
+    letter-spacing: 0.06em;
+  }
+  .page-head p{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    color: rgba(241,233,216,0.55);
+    margin-top: 12px;
+  }
+
+  /* ---------- 日記リスト ---------- */
+  main{
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px 120px;
+  }
+
+  .diary-list{
+    display:flex;
+    flex-direction:column;
+  }
+
+  .diary-entry{
+    display:grid;
+    grid-template-columns: 108px 1fr;
+    gap: 26px;
+    padding: 30px 0;
+    border-bottom: 1px solid rgba(184,146,90,0.22);
+  }
+  .diary-entry:first-child{ padding-top: 10px; }
+
+  .diary-date{
+    font-family:'Shippori Mincho', serif;
+    font-size: 0.92rem;
+    color: var(--gold-soft);
+    line-height: 1.6;
+    padding-top: 2px;
+  }
+  .diary-date .day{
+    display:block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ivory);
+  }
+
+  .diary-text{
+    font-size: 0.96rem;
+    color: rgba(241,233,216,0.9);
+  }
+
+  .load-more{
+    display:block;
+    width: fit-content;
+    margin: 50px auto 0;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.16em;
+    color: rgba(241,233,216,0.6);
+    border: 1px solid rgba(184,146,90,0.4);
+    border-radius: 999px;
+    padding: 12px 30px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .load-more:hover{ color: var(--gold-soft); border-color: var(--gold-soft); }
+
+  /* ---------- フッター ---------- */
+  footer{
+    padding: 70px 24px 50px;
+    text-align:center;
+    background: rgba(0,0,0,0.22);
+  }
+  footer .site-name{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.1rem;
+    color: var(--gold-soft);
+  }
+  footer .links{
+    margin-top: 18px;
+    display:flex;
+    gap: 22px;
+    justify-content:center;
+    flex-wrap:wrap;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.82rem;
+  }
+  footer .links a{
+    color: rgba(241,233,216,0.8);
+    border-bottom: 1px solid rgba(241,233,216,0.25);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  footer .links a:hover{ color: var(--gold-soft); border-color: var(--gold-soft); }
+
+  footer .notice{
+    margin-top: 34px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.68rem;
+    line-height: 1.9;
+    color: rgba(241,233,216,0.42);
+    max-width: 520px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  @media (max-width: 520px){
+    .diary-entry{ grid-template-columns: 1fr; gap: 6px; }
+    .diary-date{ display:flex; align-items:baseline; gap: 10px; }
+    .diary-date .day{ font-size: 1.15rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="table-frame" aria-hidden="true"></div>
+
+<nav class="rack" aria-label="サイト内ナビゲーション">
+  <div class="rack-inner">
+    <a class="tile-link" href="index.html">
+      <span class="kanji">卓</span><span class="roman">TOP</span>
+    </a>
+    <a class="tile-link current" href="blog.html" aria-current="page">
+      <span class="kanji">日記</span><span class="roman">BLOG</span>
+    </a>
+    <a class="tile-link" href="gallery.html">
+      <span class="kanji">牌譜</span><span class="roman">GALLERY</span>
+    </a>
+    <a class="tile-link" href="about.html">
+      <span class="kanji">紹介</span><span class="roman">ABOUT</span>
+    </a>
+  </div>
+</nav>
+
+<header class="page-head">
+  <span class="mark">日記</span>
+  <h1>卓上日記</h1>
+  <p>DIARY OF THE TABLE</p>
+</header>
+
+<main>
+  <div class="diary-list">
+
+    <article class="diary-entry">
+      <div class="diary-date"><span class="day">26</span>2026.07</div>
+      <p class="diary-text">
+        blog.htmlを作った。日付と本文だけのシンプルな形式にした。
+        更新のハードルを下げて、とにかく打った内容を残していくのが目的。
+      </p>
+    </article>
+
+    <article class="diary-entry">
+      <div class="diary-date"><span class="day">21</span>2026.07</div>
+      <p class="diary-text">
+        何切るの本を読み返した。牌効率だけでなく、点棒状況によって答えが変わるのが面白い。
+        次はネット対局の牌譜を見返して、実戦で試してみたい。
+      </p>
+    </article>
+
+    <article class="diary-entry">
+      <div class="diary-date"><span class="day">14</span>2026.07</div>
+      <p class="diary-text">
+        符計算でまた符の切り上げを忘れて誤答。基本ほど油断してしまうので、
+        計算式を紙に書いて確認する習慣をつける。
+      </p>
+    </article>
+
+  </div>
+
+  <a class="load-more" href="#">もっと見る</a>
+</main>
+
+<footer>
+  <p class="site-name">麻雀の勉強部屋</p>
+  <div class="links">
+    <a href="https://azaleacreativeroom888.github.io/">Azalea Creative Room</a>
+    <a href="https://azaleacreativeroom888.github.io/links.html">Links</a>
+    <a href="index.html">卓</a>
+    <a href="gallery.html">牌譜</a>
+    <a href="about.html">紹介</a>
+  </div>
+  <p class="notice">
+    本サイトに掲載する文章・画像等のコンテンツは、生成AIの学習データとしての使用を固く禁じます。<br>
+    No AI training on any text or image content on this site.
+  </p>
+</footer>
+
+</body>
+</html>
