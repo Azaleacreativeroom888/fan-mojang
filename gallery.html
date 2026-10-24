@@ -236,6 +236,79 @@
     margin-top: 6px;
   }
 
+  /* ---------- 特集ページへのリンクボックス ---------- */
+  .report-link{
+    display:flex;
+    align-items:center;
+    gap: 26px;
+    margin-bottom: 34px;
+    padding: 22px 28px;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    color: var(--ink);
+    border-radius: 12px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -7px 0 -2px var(--bamboo) inset,
+      0 14px 26px rgba(0,0,0,0.35);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .report-link:hover, .report-link:focus-visible{
+    transform: translateY(-6px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -7px 0 -2px var(--bamboo) inset,
+      0 22px 32px rgba(0,0,0,0.42);
+    outline: none;
+  }
+  .report-link:focus-visible{ outline: 2px solid var(--gold); outline-offset: 4px; }
+  .report-link .glyph{
+    flex: none;
+    width: 64px;
+    height: 84px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Shippori Mincho', serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--red);
+    background: rgba(255,255,255,0.35);
+    border: 1px solid rgba(33,25,19,0.12);
+    border-radius: 8px;
+  }
+  .report-link .body{ flex: 1; }
+  .report-link .tag{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .report-link h2{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.25rem;
+    margin-top: 4px;
+  }
+  .report-link p{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.78rem;
+    color: rgba(33,25,19,0.65);
+    margin-top: 4px;
+    line-height: 1.7;
+  }
+  .report-link .arrow{
+    flex: none;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--red);
+  }
+  @media (max-width: 560px){
+    .report-link{ flex-wrap: wrap; gap: 16px; padding: 20px; }
+    .report-link .arrow{ width: 100%; text-align: right; }
+  }
+
   .empty-note{
     text-align:center;
     margin-top: 20px;
@@ -327,6 +400,16 @@
 </div>
 
 <main>
+  <a class="report-link" href="report1.html">
+    <span class="glyph" aria-hidden="true">譜</span>
+    <span class="body">
+      <span class="tag">SPECIAL</span>
+      <h2>麻雀の棋譜</h2>
+      <p>実戦の牌譜を一打ずつ振り返る特集ページ</p>
+    </span>
+    <span class="arrow">READ →</span>
+  </a>
+
   <div class="gallery-grid">
 
     <!-- 各カードの .gallery-thumb 内に <img src="..." alt="..."> を差し込めば画像表示に切り替わります -->
