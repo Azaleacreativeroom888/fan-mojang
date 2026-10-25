@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>棋譜ビューア | 麻雀の勉強部屋</title>
+<meta name="description" content="麻雀の棋譜を一打ずつ進めながら見られるページ。">
+<meta name="robots" content="noai, noimageai">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Noto+Serif+JP:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red: #7a1f2b;
+    --red-deep: #3d0f16;
+    --red-bright: #a5293a;
+    --ivory: #f1e9d8;
+    --ivory-shadow: #d8c9a8;
+    --ink: #211913;
+    --gold: #b8925a;
+    --gold-soft: #d9bd8c;
+    --bamboo: #3f5d45;
+    --wood: #3e2a1b;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+
+  body{
+    font-family:'Noto Serif JP', serif;
+    color: var(--ivory);
+    background:
+      repeating-linear-gradient(135deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 26px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.08) 0 2px, transparent 2px 26px),
+      radial-gradient(ellipse at 50% -10%, var(--red-bright) 0%, var(--red) 45%, var(--red-deep) 100%);
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+  a:focus-visible, button:focus-visible, input:focus-visible{ outline: 2px solid var(--gold-soft); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+  }
+
+  .table-frame{
+    position: fixed;
+    inset: 10px;
+    border: 2px solid rgba(184,146,90,0.35);
+    border-radius: 18px;
+    pointer-events:none;
+    z-index: 5;
+  }
+  @media (max-width: 640px){ .table-frame{ display:none; } }
+
+  /* ---------- 牌のラック(ナビ) ---------- */
+  nav.rack{
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(180deg, rgba(61,15,22,0.96), rgba(61,15,22,0.85));
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(184,146,90,0.3);
+  }
+  .rack-inner{
+    max-width: 1080px;
+    margin: 0 auto;
+    display:flex;
+    gap: 14px;
+    padding: 14px 24px;
+    justify-content:center;
+    flex-wrap: wrap;
+  }
+  .tile-link{
+    position:relative;
+    width: 72px;
+    height: 96px;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    border-radius: 8px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 8px 14px rgba(0,0,0,0.35);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .tile-link:hover, .tile-link:focus-visible{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--bamboo) inset,
+      0 16px 22px rgba(0,0,0,0.45);
+    outline: none;
+  }
+  .tile-link:focus-visible{ outline: 2px solid var(--gold); outline-offset: 3px; }
+  .tile-link.current{
+    transform: translateY(-8px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -5px 0 -1px var(--red) inset,
+      0 12px 18px rgba(0,0,0,0.4);
+  }
+  .tile-link .kanji{
+    font-family:'Shippori Mincho', serif;
+    font-weight: 700;
+    font-size: 1.55rem;
+    color: var(--red);
+  }
+  .tile-link .roman{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  /* ---------- ページ見出し ---------- */
+  .page-hero{ padding: 60px 24px 26px; text-align:center; }
+  .crumb{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.8rem;
+    color: rgba(241,233,216,0.6);
+    margin-bottom: 16px;
+  }
+  .crumb a{ color: var(--gold-soft); font-weight: 700; }
+  .crumb a:hover{ text-decoration: underline; }
+  .page-hero .eyebrow{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.3em;
+    color: var(--gold-soft);
+    margin-bottom: 10px;
+  }
+  .page-hero h1{
+    font-family:'Shippori Mincho', serif;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  .game-meta{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap: 4px 22px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(241,233,216,0.7);
+  }
+  .game-meta b{ color: var(--gold-soft); font-weight: 700; }
+
+  /* ---------- 牌(共通) ---------- */
+  .tile{
+    --w: 36px;
+    position: relative;
+    flex: none;
+    width: var(--w);
+    height: calc(var(--w) * 1.3);
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    border-radius: calc(var(--w) * 0.16);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    line-height: 1;
+    font-family:'Shippori Mincho', serif;
+    color: var(--ink);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 calc(var(--w) * -0.1) 0 -1px var(--bamboo) inset,
+      0 3px 6px rgba(0,0,0,0.35);
+  }
+  .tile .n{ font-size: calc(var(--w) * 0.46); font-weight: 800; }
+  .tile .s{ font-size: calc(var(--w) * 0.28); font-weight: 700; margin-top: calc(var(--w) * 0.05); }
+  .tile.man .s{ color: var(--red); }
+  .tile.pin .n, .tile.pin .s{ color: #1f4e8c; }
+  .tile.sou .n, .tile.sou .s{ color: #2f6b3a; }
+  .tile.honor .n{ font-size: calc(var(--w) * 0.62); }
+  .tile.z6 .n{ color: #2f6b3a; }
+  .tile.z7 .n{ color: var(--red); }
+  .tile.z5 .n{ visibility: hidden; }
+  .tile.z5::after{
+    content:"";
+    position:absolute;
+    left: 24%; right: 24%; top: 20%; bottom: 28%;
+    border: 2px solid #1f4e8c;
+    border-radius: 3px;
+  }
+
+  .tile.last{
+    outline: 2px solid #ffd27a;
+    outline-offset: 1px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 calc(var(--w) * -0.1) 0 -1px var(--bamboo) inset,
+      0 0 12px rgba(255,210,122,0.7);
+  }
+  .tile.rc::before{
+    content:"立";
+    position:absolute;
+    top: -6px; right: -6px;
+    width: 16px; height: 16px;
+    display:grid; place-items:center;
+    background: var(--red-bright);
+    color:#fff;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    border-radius: 50%;
+    z-index: 2;
+  }
+  .tile.dim{ opacity: 0.55; }
+  .tile.cut{
+    transform: translateY(-8px);
+    outline: 2px solid #ffd27a;
+    outline-offset: 1px;
+  }
+
+  /* ---------- ビューア ---------- */
+  .viewer{ max-width: 1080px; margin: 0 auto; padding: 10px 24px 60px; }
+  .viewer-grid{
+    display:grid;
+    grid-template-columns: minmax(0,1.25fr) minmax(0,0.75fr);
+    gap: 30px;
+    align-items:start;
+  }
+  @media (max-width: 860px){ .viewer-grid{ grid-template-columns: 1fr; } }
+
+  .board-col{ display:flex; flex-direction:column; gap: 16px; }
+
+  .board{
+    background: radial-gradient(ellipse at 50% 40%, #5b141f 0%, #34090f 100%);
+    border: 8px solid var(--wood);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(184,146,90,0.35);
+  }
+
+  .info-strip{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap: 10px 26px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(184,146,90,0.3);
+    border-radius: 8px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.8rem;
+    color: rgba(241,233,216,0.85);
+  }
+  .info-strip .round{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gold-soft);
+  }
+  .info-strip .dora{ display:flex; align-items:center; gap: 8px; }
+  .info-strip .dora .tile{ --w: 26px; }
+  .info-strip b{ color: var(--gold-soft); }
+
+  .rivers{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+  }
+  .river{
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(184,146,90,0.25);
+    border-radius: 8px;
+    padding: 10px 10px 12px;
+    transition: border-color 0.2s ease;
+  }
+  .river.active{ border-color: var(--gold-soft); }
+  .river-head{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.78rem;
+  }
+  .river-head .wind{
+    font-family:'Shippori Mincho', serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--gold-soft);
+  }
+  .river-head .rbadge{
+    margin-left: auto;
+    background: var(--red-bright);
+    color:#fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 1px 8px;
+    border-radius: 999px;
+  }
+  .river-tiles{
+    display:grid;
+    grid-template-columns: repeat(6, max-content);
+    gap: 5px 3px;
+    min-height: 40px;
+  }
+  .river .tile{ --w: 28px; }
+  @media (max-width: 520px){
+    .river .tile{ --w: 20px; }
+    .river-tiles{ gap: 4px 2px; }
+    .river{ padding: 8px; }
+  }
+
+  .hand-panel{
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(184,146,90,0.28);
+    border-radius: 10px;
+    padding: 16px 18px 20px;
+  }
+  .hand-panel h2{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    color: var(--gold-soft);
+    margin-bottom: 18px;
+  }
+  .hand-tiles{ display:flex; flex-wrap:wrap; gap: 4px; align-items:flex-end; padding-top: 10px; }
+  .hand-tiles .tile{ --w: 34px; }
+  .draw-gap{ width: 14px; flex:none; }
+  @media (max-width: 520px){ .hand-tiles .tile{ --w: 25px; } .draw-gap{ width: 8px; } }
+
+  /* ---------- サイドパネル ---------- */
+  .side{ display:flex; flex-direction:column; gap: 16px; }
+  .panel{
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(184,146,90,0.28);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .panel h2{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    color: var(--gold-soft);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .now{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    min-height: 1.9em;
+  }
+  .caps{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.78rem;
+    color: rgba(241,233,216,0.6);
+    margin-top: 4px;
+  }
+  .comment{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.88rem;
+    min-height: 3.6em;
+    color: rgba(241,233,216,0.9);
+  }
+  .comment.empty{ color: rgba(241,233,216,0.5); }
+
+  .controls{ display:flex; gap: 8px; }
+  .ctl{
+    flex:1;
+    min-width: 48px;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 10px 0;
+    background: rgba(0,0,0,0.25);
+    border: 1.5px solid rgba(184,146,90,0.45);
+    border-radius: 6px;
+    color: var(--ivory);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .ctl:hover:not(:disabled){ background: var(--gold-soft); color: var(--red-deep); border-color: var(--gold-soft); }
+  .ctl.main{ background: var(--gold-soft); color: var(--red-deep); border-color: var(--gold-soft); }
+  .ctl.main:hover:not(:disabled){ background: var(--ivory); }
+  .ctl:disabled{ opacity: 0.35; cursor: not-allowed; }
+  .slider-row{
+    margin-top: 14px;
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.8rem;
+    color: rgba(241,233,216,0.6);
+  }
+  .slider-row input[type=range]{ flex:1; accent-color: var(--gold-soft); }
+  .hint{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.74rem;
+    color: rgba(241,233,216,0.5);
+    margin-top: 10px;
+    line-height: 1.7;
+  }
+
+  .movelist{ display:flex; flex-wrap:wrap; gap: 6px; max-height: 220px; overflow-y:auto; }
+  .mv{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.76rem;
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: 1px solid rgba(184,146,90,0.25);
+    background: rgba(0,0,0,0.25);
+    color: var(--ivory);
+    cursor: pointer;
+  }
+  .mv.s0{ border-left: 6px solid var(--gold-soft); }
+  .mv.s1{ border-left: 6px solid var(--ivory-shadow); }
+  .mv.s2{ border-left: 6px solid #7fa586; }
+  .mv.s3{ border-left: 6px solid #c98a86; }
+  .mv:hover{ background: rgba(255,255,255,0.12); }
+  .mv.active{ background: var(--gold-soft); color: var(--red-deep); border-color: var(--gold-soft); }
+
+  /* ---------- ほかの棋譜 ---------- */
+  .others{ max-width: 1080px; margin: 0 auto; padding: 0 24px 100px; }
+  .others h2{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+  }
+  .others > p{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.84rem;
+    color: rgba(241,233,216,0.65);
+    margin-bottom: 16px;
+  }
+  .others > p a{ color: var(--gold-soft); font-weight: 700; }
+  .other-list{ display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .other{
+    display:block;
+    position:relative;
+    background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-shadow) 100%);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 14px 18px 18px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.55) inset,
+      0 -6px 0 -2px var(--bamboo) inset,
+      0 10px 18px rgba(0,0,0,0.32);
+    transition: transform 0.22s ease;
+  }
+  .other:hover{ transform: translateY(-5px); }
+  .other.now-playing{ outline: 2px solid #ffd27a; outline-offset: 2px; }
+  .other b{ display:block; font-family:'Shippori Mincho', serif; font-size: 0.98rem; }
+  .other span{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.74rem;
+    color: rgba(33,25,19,0.62);
+  }
+
+  /* ---------- フッター ---------- */
+  footer{
+    padding: 70px 24px 50px;
+    text-align:center;
+    background: rgba(0,0,0,0.22);
+  }
+  footer .site-name{
+    font-family:'Shippori Mincho', serif;
+    font-size: 1.1rem;
+    color: var(--gold-soft);
+  }
+  footer .links{
+    margin-top: 18px;
+    display:flex;
+    gap: 22px;
+    justify-content:center;
+    flex-wrap:wrap;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.82rem;
+  }
+  footer .links a{
+    color: rgba(241,233,216,0.8);
+    border-bottom: 1px solid rgba(241,233,216,0.25);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  footer .links a:hover{ color: var(--gold-soft); border-color: var(--gold-soft); }
+  footer .notice{
+    margin-top: 34px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size: 0.68rem;
+    line-height: 1.9;
+    color: rgba(241,233,216,0.42);
+    max-width: 520px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="table-frame" aria-hidden="true"></div>
+
+<nav class="rack" aria-label="サイト内ナビゲーション">
+  <div class="rack-inner">
+    <a class="tile-link" href="index.html">
+      <span class="kanji">卓</span><span class="roman">TOP</span>
+    </a>
+    <a class="tile-link" href="blog.html">
+      <span class="kanji">日記</span><span class="roman">BLOG</span>
+    </a>
+    <a class="tile-link current" href="gallery.html" aria-current="page">
+      <span class="kanji">牌譜</span><span class="roman">GALLERY</span>
+    </a>
+    <a class="tile-link" href="about.html">
+      <span class="kanji">紹介</span><span class="roman">ABOUT</span>
+    </a>
+  </div>
+</nav>
+
+<main>
+
+  <section class="page-hero">
+    <p class="crumb"><a href="gallery.html">ギャラリー</a> ／ <a href="kifu.html">棋譜一覧</a></p>
+    <div class="eyebrow">KIFU VIEWER</div>
+    <h1 id="gameTitle">棋譜ビューア</h1>
+    <div class="game-meta" id="gameMeta"></div>
+  </section>
+
+  <section class="viewer">
+    <div class="viewer-grid">
+
+      <div class="board-col">
+        <div class="board" id="board" aria-live="polite"></div>
+
+        <div class="hand-panel">
+          <h2 id="handLabel">手牌</h2>
+          <div class="hand-tiles" id="handTiles"></div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="panel">
+          <h2>NOW</h2>
+          <div class="now" id="nowText"></div>
+          <div class="caps" id="capsText"></div>
+        </div>
+
+        <div class="panel">
+          <h2>COMMENT</h2>
+          <p class="comment" id="commentText"></p>
+        </div>
+
+        <div class="panel">
+          <h2>CONTROL</h2>
+          <div class="controls">
+            <button class="ctl" id="btnFirst" aria-label="最初へ">⏮</button>
+            <button class="ctl" id="btnPrev" aria-label="一打戻る">◀</button>
+            <button class="ctl main" id="btnNext" aria-label="一打進む">▶</button>
+            <button class="ctl" id="btnLast" aria-label="最後へ">⏭</button>
+          </div>
+          <div class="slider-row">
+            <span>0</span>
+            <input type="range" id="slider" min="0" value="0" aria-label="手数">
+            <span id="sliderMax"></span>
+          </div>
+          <p class="hint">キーボードの ← → でも進められます（Home / End で最初・最後）。<br>金色の枠が今切られた牌、「立」の印は立直宣言牌です。</p>
+        </div>
+
+        <div class="panel">
+          <h2>MOVES</h2>
+          <div class="movelist" id="moveList"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="others">
+    <h2>ほかの棋譜</h2>
+    <p><a href="kifu.html">棋譜一覧ページ</a>からもまとめて見られます。</p>
+    <div class="other-list" id="otherList"></div>
+  </section>
+
+</main>
+
+<footer>
+  <p class="site-name">麻雀の勉強部屋</p>
+  <div class="links">
+    <a href="https://azaleacreativeroom888.github.io/">Azalea Creative Room</a>
+    <a href="https://azaleacreativeroom888.github.io/links.html">Links</a>
+    <a href="index.html">卓</a>
+    <a href="blog.html">日記</a>
+    <a href="gallery.html">牌譜</a>
+    <a href="about.html">紹介</a>
+  </div>
+  <p class="notice">
+    本サイトに掲載する文章・画像等のコンテンツは、生成AIの学習データとしての使用を固く禁じます。<br>
+    No AI training on any text or image content on this site.
+  </p>
+</footer>
+
+<script>
+/* =========================================================
+   棋譜データ
+   【牌の書き方】
+     萬子 1m〜9m / 筒子 1p〜9p / 索子 1s〜9s
+     字牌 1z=東 2z=南 3z=西 4z=北 5z=白 6z=發 7z=中
+   【座席】 0=自分 1=下家 2=対面 3=上家
+     自分が東家（親）で、0→1→2→3 の順に打つ前提。
+   【moves の書き方】 "座席 ツモ牌 切る牌"
+     自分:       "0 5s 7z"   → 自分が五索をツモって七(中)を切った
+     他家:       "1 - 9p"    → 他家のツモ牌は見えないので - にする
+     立直宣言:    切る牌の後ろに * を付ける  例 "0 4m 8m*"
+     ツモ切り:    ツモ牌と切る牌を同じにする 例 "0 2p 2p"
+   【hand】 自分の配牌13枚
+   【comments】 { 手数: "コメント" } で任意に追加（0は配牌）
+   【棋譜を増やすとき】
+     このファイルをコピーして kifu2.html のような名前で保存し、
+     GAME の中身を書き換える。OTHERS は全ての kifu*.html で同じ内容に揃え、
+     kifu.html の一覧にもカードを1つ足す。
+   ========================================================= */
+const GAME = {
+  title: "サンプル：親番での先制リーチ",
+  date: "2026.07.21",
+  round: "東一局",
+  honba: 0,
+  players: ["自分", "下家", "対面", "上家"],
+  winds: ["東", "南", "西", "北"],
+  dora: ["4p"],
+  result: "（サンプルなので未記入）",
+  hand: "1m 2m 3m 5m 8m 7p 8p 9p 3s 4s 6s 9s 7z".split(" "),
+  moves: [
+    "0 5s 7z",  "1 - 9p", "2 - 1z", "3 - 4p",
+    "0 6m 9s",  "1 - 3p", "2 - 7z", "3 - 9s",
+    "0 4m 8m*", "1 - 2s", "2 - 5p", "3 - 1m",
+    "0 2p 2p",  "1 - 6p", "2 - 4s", "3 - 2z",
+    "0 8s 8s",  "1 - 3m", "2 - 9p", "3 - 5z"
+  ],
+  comments: {
+    0: "親番（東家）で配牌13枚。ドラ表示牌は四筒なので、ドラは五筒。",
+    1: "五索ツモ。三四五六索の形ができるので、孤立している中を先に切る。",
+    5: "六萬ツモで五六萬の両面ターツができた。つながりの薄い九索を切る。",
+    9: "四萬ツモ。八萬を切れば三索・六索のノベタンでテンパイ。迷わず先制リーチ。",
+    10: "リーチ後は手を変えられないので、ここからは自分はツモ切りが基本。",
+    13: "二筒ツモ。当たり牌ではないのでそのままツモ切り。",
+    20: "サンプルはここまで。実際の棋譜に差し替えてね。"
+  }
+};
+
+/* 「ほかの棋譜」欄。棋譜を増やしたら、全ての kifu*.html の OTHERS を同じ内容に揃えてね。
+   href に自分自身も入れてOK（自動でハイライトされる）。 */
+const OTHERS = [
+  { href: "kifu1.html", title: "サンプル：親番での先制リーチ", date: "2026.07.21", round: "東一局", moves: 20 },
+  { href: "kifu2.html", title: "サンプル：押し引きの判断", date: "2026.07.14", round: "南二局", moves: 20 },
+  { href: "kifu3.html", title: "サンプル：オーラスの点数計算", date: "2026.07.07", round: "東四局", moves: 20 }
+];
+
+/* ---------------- 以下、ビューアの処理 ---------------- */
+const game = GAME;
+const $ = id => document.getElementById(id);
+
+const KJ = "一二三四五六七八九";
+const HN = ["", "東", "南", "西", "北", "白", "發", "中"];
+const SUITCH = {m: "萬", p: "筒", s: "索"};
+const SUITCLS = {m: "man", p: "pin", s: "sou"};
+const SUITORD = {m: 0, p: 1, s: 2, z: 3};
+
+let step = 0;
+
+function isTile(t){ return /^([1-9][mps]|[1-7]z)$/.test(t || ""); }
+
+function tileName(t){
+  if (!isTile(t)) return "？";
+  const n = +t[0], s = t[1];
+  return s === "z" ? HN[n] : KJ[n - 1] + SUITCH[s];
+}
+
+function tileHTML(t, extra){
+  extra = extra || "";
+  if (!isTile(t)) return `<span class="tile ${extra}"><span class="n">？</span></span>`;
+  const n = +t[0], s = t[1];
+  if (s === "z"){
+    return `<span class="tile honor z${n} ${extra}" title="${HN[n]}"><span class="n">${HN[n]}</span></span>`;
+  }
+  const num = s === "m" ? KJ[n - 1] : String(n);
+  return `<span class="tile ${SUITCLS[s]} ${extra}" title="${tileName(t)}"><span class="n">${num}</span><span class="s">${SUITCH[s]}</span></span>`;
+}
+
+function sortHand(arr){
+  return arr.slice().sort((a, b) => (SUITORD[a[1]] * 10 + +a[0]) - (SUITORD[b[1]] * 10 + +b[0]));
+}
+
+function parseMove(str){
+  const p = (str || "").trim().split(/\s+/);
+  if (p.length !== 3) return null;
+  const seat = +p[0];
+  const rc = p[2].endsWith("*");
+  const disc = rc ? p[2].slice(0, -1) : p[2];
+  const draw = p[1] === "-" ? null : p[1];
+  if (!(seat >= 0 && seat <= 3) || !isTile(disc) || (draw !== null && !isTile(draw))) return null;
+  return {seat, draw, disc, rc};
+}
+
+function play(upto){
+  const rivers = [[], [], [], []];
+  const hand = game.hand.slice();
+  const riichi = [false, false, false, false];
+  const labels = [];
+  let last = null, selfInfo = null;
+  for (let i = 0; i < upto; i++){
+    selfInfo = null;
+    const mv = parseMove(game.moves[i]);
+    if (!mv){ labels.push("？"); last = null; continue; }
+    const {seat, draw, disc, rc} = mv;
+    if (rc) riichi[seat] = true;
+    rivers[seat].push({t: disc, rc: rc, tsumogiri: seat === 0 && draw === disc});
+    last = {seat: seat, idx: rivers[seat].length - 1};
+    if (seat === 0){
+      const before = hand.slice();
+      if (draw && draw !== disc){
+        const k = hand.indexOf(disc);
+        if (k >= 0) hand.splice(k, 1);
+        hand.push(draw);
+      }
+      selfInfo = {before: before, draw: draw, disc: disc};
+    }
+    labels.push(game.winds[seat] + " " + tileName(disc) + (rc ? "・立直" : ""));
+  }
+  return {rivers, hand, riichi, labels, last, selfInfo};
+}
+
+const LABELS = play(game.moves.length).labels;
+
+function draw(){
+  const pos = play(step);
+
+  /* 場の情報 */
+  const sticks = pos.riichi.filter(Boolean).length;
+  let b = `<div class="info-strip">` +
+    `<span class="round">${game.round}　${game.honba}本場</span>` +
+    `<span class="dora">ドラ表示牌 ${game.dora.map(t => tileHTML(t)).join("")}</span>` +
+    `<span>立直棒 <b>${sticks}</b>本</span>` +
+    `</div>`;
+
+  /* 4人の河 */
+  b += `<div class="rivers">`;
+  for (let s = 0; s < 4; s++){
+    const active = pos.last && pos.last.seat === s;
+    b += `<div class="river${active ? " active" : ""}">` +
+      `<div class="river-head"><span class="wind">${game.winds[s]}</span><span>${game.players[s]}</span>` +
+      (pos.riichi[s] ? `<span class="rbadge">立直</span>` : "") + `</div>` +
+      `<div class="river-tiles">`;
+    pos.rivers[s].forEach((r, idx) => {
+      const cls = [];
+      if (r.rc) cls.push("rc");
+      if (r.tsumogiri) cls.push("dim");
+      if (pos.last && pos.last.seat === s && pos.last.idx === idx) cls.push("last");
+      b += tileHTML(r.t, cls.join(" "));
+    });
+    b += `</div></div>`;
+  }
+  b += `</div>`;
+  $('board').innerHTML = b;
+
+  /* 自分の手牌 */
+  let label, tiles;
+  if (pos.selfInfo){
+    const {before, draw: dr, disc} = pos.selfInfo;
+    let marked = false;
+    tiles = sortHand(before).map(t => {
+      const hit = !marked && dr !== disc && t === disc;
+      if (hit) marked = true;
+      return tileHTML(t, hit ? "cut" : "");
+    }).join("");
+    if (dr) tiles += `<span class="draw-gap"></span>` + tileHTML(dr, dr === disc ? "cut" : "");
+    label = "自分（東家）の手牌　切る前・右端がツモ牌";
+  } else {
+    tiles = sortHand(pos.hand).map(t => tileHTML(t)).join("");
+    label = step === 0 ? "自分（東家）の手牌　配牌" : "自分（東家）の手牌";
+  }
+  $('handLabel').textContent = label;
+  $('handTiles').innerHTML = tiles;
+
+  /* 現在の手 */
+  if (step === 0){
+    $('nowText').textContent = "配牌（" + game.round + "・親番）";
+    $('capsText').textContent = "次の手番：" + game.winds[0] + "家（" + game.players[0] + "）";
+  } else {
+    const mv = parseMove(game.moves[step - 1]);
+    let txt = step + "手目　" + game.winds[mv ? mv.seat : 0] + "家（" + game.players[mv ? mv.seat : 0] + "）";
+    if (mv){
+      txt += mv.seat === 0 && mv.draw
+        ? "　ツモ" + tileName(mv.draw) + "／切" + tileName(mv.disc)
+        : "　切" + tileName(mv.disc);
+      if (mv.rc) txt += "（立直）";
+    }
+    $('nowText').textContent = txt;
+    $('capsText').textContent = step < game.moves.length
+      ? "次の手番：" + game.winds[(step) % 4] + "家（" + game.players[step % 4] + "）"
+      : "棋譜の最後です";
+  }
+
+  const c = game.comments && game.comments[step];
+  $('commentText').textContent = c || (step === 0 ? "▶ を押すと一打ずつ進みます。" : "この手へのコメントはありません。");
+  $('commentText').className = "comment" + (c ? "" : " empty");
+
+  $('slider').value = step;
+  $('btnFirst').disabled = $('btnPrev').disabled = step === 0;
+  $('btnNext').disabled = $('btnLast').disabled = step === game.moves.length;
+  document.querySelectorAll('.mv').forEach(el => el.classList.toggle('active', +el.dataset.n === step));
+}
+
+function go(n){ step = Math.max(0, Math.min(game.moves.length, n)); draw(); }
+
+/* init */
+document.title = game.title + " | 麻雀の勉強部屋";
+$('gameTitle').textContent = game.title;
+$('gameMeta').innerHTML =
+  `<span>日付：<b>${game.date}</b></span><span>${game.round}</span><span>自分：<b>東家（親）</b></span><span>${game.moves.length}手</span><span>結果：<b>${game.result}</b></span>`;
+$('slider').max = game.moves.length;
+$('sliderMax').textContent = game.moves.length;
+
+game.moves.forEach((tok, i) => {
+  const mv = parseMove(tok);
+  const b = document.createElement('button');
+  b.className = 'mv s' + (mv ? mv.seat : 0);
+  b.dataset.n = i + 1;
+  b.textContent = (i + 1) + " " + LABELS[i];
+  b.addEventListener('click', () => go(i + 1));
+  $('moveList').appendChild(b);
+});
+
+const here = location.pathname.split('/').pop();
+OTHERS.forEach(g => {
+  const a = document.createElement('a');
+  a.className = 'other' + (g.href === here ? ' now-playing' : '');
+  a.href = g.href;
+  a.innerHTML = `<b>${g.title}</b><span>${g.date}・${g.round}・${g.moves}手</span>`;
+  $('otherList').appendChild(a);
+});
+
+$('btnFirst').addEventListener('click', () => go(0));
+$('btnPrev').addEventListener('click', () => go(step - 1));
+$('btnNext').addEventListener('click', () => go(step + 1));
+$('btnLast').addEventListener('click', () => go(game.moves.length));
+$('slider').addEventListener('input', e => go(+e.target.value));
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
+  if (e.key === 'ArrowRight') go(step + 1);
+  else if (e.key === 'ArrowLeft') go(step - 1);
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(game.moves.length);
+});
+
+draw();
+</script>
+
+</body>
+</html>
